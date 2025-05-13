@@ -1,0 +1,302 @@
+<html><head><base href="https://vaporwave.com/">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Meditation</title>
+<style>
+:root {
+  --sun-inner: #ffcb55;
+  --sun-outer: #ff0488;
+  --glow-intensity: 1;
+  --bg-color: #808080;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  cursor: none;
+  overflow: hidden;
+  background: var(--bg-color);
+  transition: background 2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.particle {
+  position: absolute;
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
+  border-radius: 50%;
+  transition: opacity 1s ease;
+}
+
+.custom-cursor {
+  width: 20px;
+  height: 20px;
+  background: #ff71ce;
+  border-radius: 50%;
+  position: fixed;
+  pointer-events: none;
+  mix-blend-mode: difference;
+  z-index: 9999;
+  transition: transform 0.1s ease;
+  box-shadow: 0 0 20px #ff71ce;
+}
+
+.screenshot-btn {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 20px;
+  color: white;
+  backdrop-filter: blur(10px);
+  font-size: 14px;
+  cursor: none;
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.screenshot-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateX(-50%) scale(1.05);
+}
+
+.scene {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 1s ease;
+}
+
+.shape {
+  width: 40vh;
+  height: 40vh;
+  background: radial-gradient(circle at center,
+    var(--sun-inner) 0%,
+    var(--sun-outer) 70%,
+    transparent 100%);
+  border-radius: 50%;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: blur(2px);
+  transform-origin: center;
+}
+
+.shape.triangle {
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+.shape.square {
+  border-radius: 0;
+}
+
+.shape.pentagon {
+  clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+}
+
+@media (max-width: 600px) {
+  .shape {
+    width: 60vw;
+    height: 60vw;
+  }
+}
+</style>
+</head>
+<body>
+<div class="custom-cursor"></div>
+<button class="screenshot-btn">Take Screenshot</button>
+<div class="scene">
+  <div class="shape"></div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', (event) => {
+  const cursor = document.querySelector('.custom-cursor');
+  const shape = document.querySelector('.shape');
+  const screenshotBtn = document.querySelector('.screenshot-btn');
+  let mouseX = 0, mouseY = 0;
+  let currentX = 0, currentY = 0;
+  let isMouseDown = false;
+  let lastParticleTime = 0;
+  
+  const shapes = ['circle', 'triangle', 'square', 'pentagon'];
+  let currentShapeIndex = 0;
+
+  function createParticle(x, y) {
+    const particle = document.createElement('div');
+    particle.className = 'particle';
+    
+    // Random size between 20 and 60
+    const size = Math.random() * 40 + 20;
+    particle.style.width = `${size}px`;
+    particle.style.height = `${size}px`;
+    
+    // Set initial position
+    particle.style.left = `${x - size/2}px`;
+    particle.style.top = `${y - size/2}px`;
+    
+    // Random movement
+    const angle = Math.random() * Math.PI * 2;
+    const velocity = Math.random() * 2 + 1;
+    const dx = Math.cos(angle) * velocity;
+    const dy = Math.sin(angle) * velocity;
+    
+    document.body.appendChild(particle);
+    
+    let opacity = 0.8;
+    let posX = x;
+    let posY = y;
+    
+    function animateParticle() {
+      if (opacity <= 0) {
+        particle.remove();
+        return;
+      }
+      
+      opacity -= 0.01;
+      posX += dx;
+      posY += dy;
+      
+      particle.style.opacity = opacity;
+      particle.style.left = `${posX - size/2}px`;
+      particle.style.top = `${posY - size/2}px`;
+      particle.style.filter = `blur(${(1 - opacity) * 10}px)`;
+      
+      requestAnimationFrame(animateParticle);
+    }
+    
+    animateParticle();
+  }
+
+  document.addEventListener('mousedown', (e) => {
+    isMouseDown = true;
+    cursor.style.transform = 'scale(0.8)';
+    shape.style.filter = 'blur(5px) brightness(1.2)';
+  });
+
+  document.addEventListener('mouseup', () => {
+    isMouseDown = false;
+    cursor.style.transform = 'scale(1)';
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+    
+    if (isMouseDown) {
+      const currentTime = Date.now();
+      if (currentTime - lastParticleTime > 50) { // Limit particle creation rate
+        createParticle(e.clientX, e.clientY);
+        lastParticleTime = currentTime;
+      }
+    }
+    
+    const xPercent = e.clientX / window.innerWidth;
+    const yPercent = e.clientY / window.innerHeight;
+    
+    // Calculate distance from center for blur effect
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    const distanceFromCenter = Math.sqrt(
+      Math.pow(e.clientX - centerX, 2) + 
+      Math.pow(e.clientY - centerY, 2)
+    );
+    const maxDistance = Math.sqrt(
+      Math.pow(window.innerWidth / 2, 2) + 
+      Math.pow(window.innerHeight / 2, 2)
+    );
+    const blurAmount = (distanceFromCenter / maxDistance) * 10;
+    shape.style.filter = `blur(${blurAmount}px)`;
+
+    // Center zone detection (20% of screen)
+    const centerZone = 0.2;
+    const inCenterX = Math.abs(xPercent - 0.5) < centerZone / 2;
+    const inCenterY = Math.abs(yPercent - 0.5) < centerZone / 2;
+    
+    let backgroundColor;
+    
+    if (inCenterX && inCenterY) {
+      backgroundColor = `var(--bg-color)`;
+    } else if (xPercent > 0.5 && yPercent < 0.5) {
+      backgroundColor = `linear-gradient(135deg, #e6e6e6 0%, #d3d3d3 50%, #ffd1dc 100%)`;
+    } else if (xPercent < 0.5 && yPercent < 0.5) {
+      backgroundColor = `linear-gradient(225deg, #d3d3d3 0%, #add8e6 100%)`;
+    } else if (xPercent > 0.5 && yPercent > 0.5) {
+      backgroundColor = `linear-gradient(45deg, #000000 0%, #1a1a1a 100%)`;
+    } else if (xPercent < 0.5 && yPercent > 0.5) {
+      backgroundColor = `linear-gradient(315deg, #ffffff 0%, #f5f5f5 100%)`;
+    }
+    
+    document.body.style.background = backgroundColor;
+    
+    const hue1 = Math.floor(xPercent * 360);
+    const hue2 = Math.floor(yPercent * 360);
+    
+    document.documentElement.style.setProperty('--sun-inner', `hsl(${hue1}, 80%, 70%)`);
+    document.documentElement.style.setProperty('--sun-outer', `hsl(${hue2}, 80%, 50%)`);
+    
+    const moveX = (xPercent - 0.5) * 50;
+    const moveY = (yPercent - 0.5) * 50;
+    shape.style.transform = `translate(${moveX}px, ${moveY}px) scale(${1 + (yPercent * 0.2)})`;
+  });
+
+  document.addEventListener('dblclick', () => {
+    currentShapeIndex = (currentShapeIndex + 1) % shapes.length;
+    shape.className = 'shape ' + shapes[currentShapeIndex];
+  });
+
+  function takeScreenshot() {
+    html2canvas(document.body).then(canvas => {
+      const link = document.createElement('a');
+      link.download = 'meditation-art.png';
+      link.href = canvas.toDataURL();
+      link.click();
+    });
+  }
+
+  screenshotBtn.addEventListener('click', takeScreenshot);
+
+  function animateCursor() {
+    const dx = mouseX - currentX;
+    const dy = mouseY - currentY;
+    
+    currentX += dx * 0.1;
+    currentY += dy * 0.1;
+    
+    cursor.style.left = (currentX - 10) + 'px';
+    cursor.style.top = (currentY - 10) + 'px';
+    
+    requestAnimationFrame(animateCursor);
+  }
+  
+  animateCursor();
+
+  // Subtle pulse animation
+  setInterval(() => {
+    if (!isMouseDown) {
+      shape.style.filter = 'blur(3px)';
+      setTimeout(() => {
+        shape.style.filter = 'blur(2px)';
+      }, 1000);
+    }
+  }, 2000);
+
+  // Random subtle variations
+  setInterval(() => {
+    if (!isMouseDown) {
+      const scale = 1 + Math.random() * 0.05;
+      shape.style.transform = `scale(${scale})`;
+      setTimeout(() => {
+        shape.style.transform = 'scale(1)';
+      }, 1000);
+    }
+  }, 3000);
+});
+</script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+</body>
+</html>
